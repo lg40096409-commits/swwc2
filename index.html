@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b0d0c">
+<style>*{box-sizing:border-box}body{margin:0}[hidden]{display:none!important}</style>
+<title>SOSAFE Watch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;600;700;900&display=swap">
+<style>
+/* Layout: one Apple Watch 44mm screen (184×224pt) drawn at true proportions, scaled to fit the viewer; single dark world like the watch itself */
+:root{
+  --ground:#0b0d0c;          /* page behind the device */
+  --ground-2:#141816;
+  --case:#1b1d1c;            /* watch case */
+  --screen:#000000;
+  --fg:#ffffff;
+  --ink:#1c1c1c;            /* near-black gray for text on bright surfaces */
+  --muted:#aeaeae;
+  --dim:#8b8a8a;
+  --mint:#4cffa4;            /* SOSAFE signature green */
+  --mint-deep:#34bf78;
+  --track:#3a3d3c;
+  --chip:#2a2a2a;
+  --g-exit-a:#31db92; --g-exit-b:#96deea;
+  --g-fire-a:#ff8a00; --g-fire-b:#ffd338;
+  --g-aed-a:#ff5a4a;  --g-aed-b:#ff7bd5;
+  --danger:#ff5b43;
+  --ui:'Pretendard','Gothic A1','Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif;
+  --clock:-apple-system,'SF Pro Text',system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{word-break:keep-all;height:100%}
+body{background:radial-gradient(120% 80% at 50% 0%,var(--ground-2),var(--ground) 60%);color:var(--fg);font-family:var(--ui);padding-inline:16px;padding-block:0;overflow-x:hidden;overflow-y:auto}
+.stage{min-height:100%;padding-block:12px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
+.caption{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
+.caption h1{margin:0;font-size:15px;font-weight:700;letter-spacing:.02em}
+.caption p{margin:0;font-size:12px;color:var(--muted);text-wrap:balance}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.toolbar button{font:600 12px var(--ui);color:var(--muted);background:transparent;border:1px solid #ffffff26;border-radius:999px;padding:6px 12px;cursor:pointer}
+.toolbar button:hover{color:var(--fg);border-color:#ffffff55}
+button:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
+
+/* device: logical size, scaled by --s. Case 208x248, 4pt metal edge + 8pt black glass bezel around the 184x224 display */
+.fit{width:calc(224px * var(--s,1.6));height:calc(252px * var(--s,1.6));position:relative;flex:none}
+.device{position:absolute;left:0;top:0;width:224px;height:252px;transform:scale(var(--s,1.6));transform-origin:0 0}
+.case{position:absolute;left:0;top:2px;width:208px;height:248px;border-radius:54px;background:linear-gradient(150deg,#4a4e4d 0%,#26292a 22%,#1a1c1d 55%,#2e3132 85%,#43474a 100%);box-shadow:0 24px 50px #000b,0 2px 0 #ffffff10 inset,0 -2px 0 #00000080 inset}
+.glass{position:absolute;left:4px;top:6px;width:200px;height:240px;border-radius:50px;background:#050505;box-shadow:inset 0 0 0 1px #ffffff12,inset 0 1px 1px #ffffff1c}
+.glass::after{content:"";position:absolute;inset:0;border-radius:50px;background:linear-gradient(160deg,#ffffff10 0%,transparent 35%);pointer-events:none;z-index:3}
+.crown{position:absolute;left:205px;top:60px;width:13px;height:34px;border-radius:4px 6px 6px 4px;background:linear-gradient(90deg,#2a2d2e,#55595a 55%,#2a2d2e);border:0;padding:0;cursor:pointer;box-shadow:inset 0 0 0 1px #ffffff14}
+.crown::after{content:"";position:absolute;inset:4px 2px 4px 4px;background:repeating-linear-gradient(0deg,#00000066 0 1px,transparent 1px 2.5px);border-radius:2px}
+.sidebtn{position:absolute;left:206px;top:118px;width:5px;height:42px;border-radius:0 3px 3px 0;background:linear-gradient(90deg,#2a2d2e,#4a4e4f)}
+.screen{position:absolute;left:12px;top:14px;width:184px;height:224px;background:var(--screen);border-radius:36px;overflow:hidden}
+
+/* views */
+.view{position:absolute;inset:0;padding:8px 10px 10px;display:flex;flex-direction:column;gap:8px;transition:opacity .22s ease,transform .22s ease}
+.view[hidden]{display:none!important}
+.view.enter{opacity:0;transform:scale(.96)}
+@media (prefers-reduced-motion:reduce){.view{transition:none}}
+.hdr{display:flex;align-items:center;justify-content:space-between;min-height:18px;padding-inline:8px 6px}
+.clock{font:600 14px var(--clock);font-variant-numeric:tabular-nums}
+.back{display:flex;align-items:center;gap:3px;line-height:1;background:none;border:0;padding:0;color:var(--mint);font:700 14px var(--ui);cursor:pointer}
+.back svg{display:block;width:7px;height:11px;flex:none;position:relative;top:-.8px}
+button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.screen{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+/* phone mode: drop the watch case, let the watch display fill the phone */
+html.phone body{overflow:hidden;padding-inline:0}
+html.phone .stage{height:100%;min-height:0;padding-block:12px;gap:14px;justify-content:center}
+html.phone .caption,html.phone .case,html.phone .glass,html.phone .crown,html.phone .sidebtn{display:none}
+html.phone .fit{width:calc(184px * var(--s));height:calc(224px * var(--s))}
+html.phone .device{width:184px;height:224px}
+html.phone .screen{left:0;top:0;border-radius:38px;box-shadow:0 0 0 1px #ffffff14}
+.homebtn{display:none}
+html.phone .homebtn{display:inline-flex}
+html.phone .toolbar button{font-size:15px;padding:10px 20px}
+
+/* home */
+.ticket{color:var(--ink);display:flex;align-items:stretch;height:46px;border-radius:12px;overflow:hidden;background:linear-gradient(90deg,var(--g-exit-a),var(--g-exit-b));flex:none;transition:filter .3s}
+.ticket .body{flex:1;display:flex;align-items:center;gap:6px;padding-left:8px;min-width:0}
+.ticket .body svg{width:22px;height:23px;flex:none}
+.t1{font-size:12px;letter-spacing:0;font-weight:700;font-weight:600;line-height:1.2;white-space:nowrap}
+.t2{font-size:10px;font-weight:600;opacity:.85;line-height:1.2}
+.stub{width:34px;flex:none;border:0;border-left:1px dashed #1c1c1c66;background:#ffffff40;color:var(--ink);font:700 12px var(--ui);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center}
+.ticket.used{filter:saturate(.35) brightness(.8)}
+.label{font-size:13px;font-weight:600}
+.days{display:flex;justify-content:center;gap:8px}
+.day{width:44px;height:44px;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--chip);border:1px solid #ffffff26;color:var(--fg);font-family:var(--ui);padding:0}
+.day b{font-size:17px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.day small{font-size:10px;font-weight:600;line-height:1.2}
+.day.future{color:#ffffff99}
+.day.today{background:var(--mint);border-color:transparent;color:var(--ink);box-shadow:0 0 8px #4cffa480;cursor:pointer}
+.day.today.done{background:#1e3a2c;color:var(--mint);box-shadow:none}
+.day svg{width:10px;height:10px}
+.sosbtn{height:40px;border-radius:20px;background:var(--mint);border:0;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;margin-top:auto}
+.sosbtn svg{width:56px;height:18px}
+.sosbtn:active{transform:scale(.97)}
+
+/* sos */
+.loc .k{font-size:10px;font-weight:500;color:var(--muted);line-height:1.2}
+.loc .v{font-size:13px;font-weight:600;line-height:1.25}
+.slider{position:relative;height:40px;border-radius:20px;background:var(--track);box-shadow:inset 0 2px 8px #00000073;flex:none;touch-action:none;user-select:none}
+.slider .hint{white-space:nowrap;letter-spacing:0;position:absolute;inset:0 6px 0 62px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:opacity .15s}
+.slider .fill{position:absolute;left:0;top:0;bottom:0;border-radius:20px;background:#4cffa433;width:0}
+.knob{position:absolute;left:4px;top:4px;width:56px;height:32px;border-radius:16px;background:var(--mint);border:0;color:var(--ink);font:800 18px var(--ui);cursor:grab;touch-action:none;box-shadow:0 1px 4px #0006}
+.knob.anim{transition:transform .25s ease}
+.knob:active{cursor:grabbing}
+.cards{display:flex;flex-direction:column;gap:5px}
+.card{color:var(--ink);display:flex;align-items:stretch;height:30px;border-radius:10px;overflow:hidden}
+.card .name{flex:1;display:flex;align-items:center;gap:4px;padding-left:5px;font-size:10.5px;font-weight:700;white-space:nowrap;min-width:0;letter-spacing:0}
+.card .name svg{width:18px;height:18px;flex:none}
+.card .act{width:28px;flex:none;border:0;border-left:1px dashed #1c1c1c66;background:#ffffff40;color:var(--ink);font:700 10.5px var(--ui);cursor:pointer;padding:0}
+.card .act:active,.stub:active{background:#ffffff55}
+.c-exit{background:linear-gradient(90deg,var(--g-exit-a),var(--g-exit-b))}
+.c-fire{background:linear-gradient(90deg,var(--g-fire-a),var(--g-fire-b))}
+.c-aed{background:linear-gradient(90deg,var(--g-aed-a),var(--g-aed-b))}
+
+/* emergency */
+#v-call{background:var(--screen)}
+.glow{position:absolute;border-radius:50%;filter:blur(30px);pointer-events:none}
+.pill{position:relative;display:flex;align-items:center;gap:10px;height:48px;border-radius:24px;padding:0 0 0 5px;background:#0000004d;border:1px solid #ffffff24;color:var(--fg);font:700 15px var(--ui);cursor:pointer;flex:none;text-align:left}
+.pill .ic{width:38px;height:38px;border-radius:19px;background:var(--mint-deep);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;flex:none;box-shadow:0 2px 4px #0004}
+.pill .ic svg{width:20px;height:20px}
+.pill:active{background:#ffffff14}
+.cancel{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;color:var(--fg);font:700 12px var(--ui);cursor:pointer;position:relative}
+.cancel span{width:40px;height:40px;border-radius:20px;background:#313131a0;border:1px solid #ffffff33;display:flex;align-items:center;justify-content:center}
+.cancel svg{width:15px;height:15px}
+
+/* dialing / detail */
+.center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;position:relative}
+.ring{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--mint-deep);font:900 26px var(--ui);font-variant-numeric:tabular-nums;position:relative}
+.ring::before{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid #4cffa466;animation:pulse 1.2s ease-out infinite}
+@keyframes pulse{from{transform:scale(.9);opacity:1}to{transform:scale(1.25);opacity:0}}
+@media (prefers-reduced-motion:reduce){.ring::before{animation:none}}
+.num{font-size:24px;font-weight:700;user-select:all;font-variant-numeric:tabular-nums}
+.sub{font-size:12px;color:var(--muted);line-height:1.35}
+.endbtn{height:36px;border-radius:18px;border:0;background:var(--danger);color:var(--fg);font:700 14px var(--ui);cursor:pointer;flex:none}
+.scroll{flex:1;overflow-y:auto;scrollbar-width:none;padding-bottom:6px}
+.scroll::-webkit-scrollbar{display:none}
+.dtitle{font-size:15px;font-weight:700;margin:0 0 6px}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.steps li{display:flex;gap:6px;align-items:flex-start;background:#1c1c1c;border-radius:10px;padding:7px 8px;font-size:12px;line-height:1.35}
+.steps li b{flex:none;width:16px;height:16px;border-radius:8px;background:var(--mint);color:var(--ink);font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.dir{width:70px;height:70px;border-radius:50%;background:#151515;border:1px solid #ffffff1f;display:flex;align-items:center;justify-content:center}
+.dir svg{display:block;width:40px;height:40px;transform-origin:50% 50%;transition:opacity .3s}
+.dir{position:relative}
+.dir::before{content:"";position:absolute;top:4px;left:50%;width:2px;height:6px;margin-left:-1px;border-radius:1px;background:#ffffff55}
+.savebtn{margin-top:4px;border:1px solid #4cffa466;background:#4cffa41a;color:var(--mint);font:700 10.5px var(--ui);border-radius:999px;padding:5px 10px;cursor:pointer}
+.dist{display:flex;align-items:baseline;justify-content:center;font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.dist small{font-size:12px;margin-left:2px}
+#dist:not(:has(small)){font-size:15px}
+.toast{position:absolute;left:50%;bottom:14px;transform:translate(-50%,10px);background:#1f1f1f;border:1px solid #4cffa455;color:var(--mint);font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;white-space:nowrap;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:5}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+</style>
+
+</head>
+<body>
+<main class="stage">
+  <div class="caption">
+    <h1>SOSAFE · Apple Watch 44mm</h1>
+    <p>화면을 직접 눌러보세요. 옆의 용두(크라운)를 누르면 홈으로 돌아가요.</p>
+  </div>
+
+  <div class="fit" id="fit">
+    <div class="device" id="device">
+      <div class="case"></div><div class="glass"></div>
+      <button class="crown" id="crown" aria-label="홈으로"></button>
+      <div class="sidebtn" aria-hidden="true"></div>
+      <div class="screen" id="screen">
+
+        <!-- HOME -->
+        <section class="view" id="v-home" aria-label="홈">
+          <div class="hdr">
+            <svg width="66" height="11" viewBox="0 0 82 14" fill="none" aria-label="S.O.SAFE"><path d="M0.265897 10.4861H6.62882C7.38131 10.4861 7.88119 10.0628 7.88119 9.42651C7.88119 8.79021 7.37865 8.36691 6.62882 8.36691H3.96985C1.58741 8.36691 0 6.77077 0 4.38465C0 1.99853 1.58741 0.515625 3.96985 0.515625H10.4737V3.42481H4.67979C3.9273 3.42481 3.42742 3.84811 3.42742 4.48441C3.42742 5.12071 3.92996 5.54401 4.67979 5.54401H6.9346C9.56698 5.54401 11.3059 7.14015 11.3059 9.52627C11.3059 11.9124 9.56432 13.3953 6.9346 13.3953H0.265897V10.4861Z" fill="#FFFEFE"/><path d="M28.7759 6.69066C28.7759 10.4841 25.8595 13.3949 21.8381 13.3949C17.8168 13.3949 14.9004 10.4868 14.9004 6.69066C14.9004 2.8945 17.8168 0 21.8381 0C25.8595 0 28.7759 2.90804 28.7759 6.68795V6.69066ZM25.292 6.69066C25.292 4.54077 23.9197 2.84035 21.8381 2.84035C19.7565 2.84035 18.3843 4.54077 18.3843 6.69066C18.3843 8.84055 19.7565 10.5545 21.8381 10.5545C23.9197 10.5545 25.292 8.85409 25.292 6.69066Z" fill="#FFFEFE"/><path d="M32.1246 10.4861H38.489C39.2417 10.4861 39.7417 10.0628 39.7417 9.42651C39.7417 8.79021 39.2417 8.36691 38.489 8.36691H35.8294C33.4464 8.36691 31.8613 6.77077 31.8613 4.38465C31.8613 1.99853 33.4491 0.515625 35.8294 0.515625H42.3348V3.42481H36.5396C35.7869 3.42481 35.2869 3.84811 35.2869 4.48441C35.2869 5.12071 35.7896 5.54401 36.5396 5.54401H38.7949C41.4279 5.54401 43.1673 7.14015 43.1673 9.52627C43.1673 11.9124 41.4252 13.3953 38.7949 13.3953H32.1246V10.4861Z" fill="#FFFEFE"/><path d="M57.0445 13.3949H53.5662V10.4777H48.7029V13.3949H45.2246V5.86416C45.2246 2.40058 47.6121 0 51.1332 0C54.6543 0 57.0418 2.40058 57.0418 5.86416V13.3949H57.0445ZM48.7056 7.51711H53.5688V5.57598C53.5688 4.21121 52.7079 2.96062 51.1385 2.96062C49.5692 2.96062 48.7083 4.21121 48.7083 5.57598V7.51711H48.7056Z" fill="#FFFEFE"/><path d="M62.0918 6.09367H68.7198V8.9744H62.0918V13.3953H58.5859V3.62293C58.5859 1.75909 59.8408 0.515625 61.7216 0.515625H68.8641V3.42603H62.9492C62.4348 3.42603 62.0945 3.76589 62.0945 4.27298V6.09637L62.0918 6.09367Z" fill="#FFFEFE"/><path d="M74.7467 10.4861H81.2002V13.3953H73.528C71.6567 13.3953 70.4082 12.1524 70.4082 10.2893V0.515625H81.2002V3.42481H73.8963V5.38763H81.0594V8.24019H73.8963V9.63682C73.8963 10.1464 74.2375 10.4834 74.7467 10.4834V10.4861Z" fill="#FFFEFE"/><path d="M13.8755 12.8811C14.4431 12.8811 14.9033 12.4197 14.9033 11.8507C14.9033 11.2816 14.4431 10.8203 13.8755 10.8203C13.3078 10.8203 12.8477 11.2816 12.8477 11.8507C12.8477 12.4197 13.3078 12.8811 13.8755 12.8811Z" fill="#FFFEFE"/><path d="M29.8032 12.8811C30.3709 12.8811 30.831 12.4197 30.831 11.8507C30.831 11.2816 30.3709 10.8203 29.8032 10.8203C29.2356 10.8203 28.7754 11.2816 28.7754 11.8507C28.7754 12.4197 29.2356 12.8811 29.8032 12.8811Z" fill="#FFFEFE"/></svg>
+            <span class="clock" data-clock>9:41</span>
+          </div>
+          <div class="ticket" id="ticket">
+            <div class="body">
+              <svg viewBox="0 0 44 46" fill="none" aria-hidden="true"><use href="#i-exit"/></svg>
+              <div><div class="t1">비상구 인지 티켓</div><div class="t2">예술대학 31동 1층</div></div>
+            </div>
+            <button class="stub" id="ticketBtn">확인</button>
+          </div>
+          <div class="label">오늘의 출석체크</div>
+          <div class="days" id="days"></div>
+          <button class="sosbtn" id="toSos" aria-label="S.O.S 열기">
+            <svg viewBox="0 0 40 13" fill="none" aria-hidden="true"><use href="#i-sos"/></svg>
+          </button>
+          <div class="toast" id="toast" role="status"></div>
+        </section>
+
+        <!-- SOS -->
+        <section class="view" id="v-sos" aria-label="SOS" hidden style="gap:6px">
+          <div class="hdr">
+            <button class="back" data-go="home"><svg viewBox="0 0 8 12" fill="none"><path d="M6.5 1.5 2 6l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>SOS</button>
+            <span class="clock" data-clock>9:41</span>
+          </div>
+          <div class="loc"><div class="k">내 현재위치</div><div class="v">예술대학 1층 · 비상구 18m</div></div>
+          <div class="slider" id="slider">
+            <div class="fill" id="fill"></div>
+            <div class="hint" id="hint">밀어서 긴급 신고</div>
+            <button class="knob" id="knob" aria-label="밀어서 긴급 신고 (Enter로도 실행)">SOS</button>
+          </div>
+          <div class="cards">
+            <div class="card c-exit">
+              <div class="name"><svg viewBox="0 0 44 46" fill="none" aria-hidden="true"><use href="#i-exit"/></svg>비상구 찾기</div>
+              <button class="act" data-detail="exit-loc">위치</button>
+            </div>
+            <div class="card c-fire">
+              <div class="name"><svg viewBox="0 0 44 44" fill="none" aria-hidden="true"><use href="#i-fire"/></svg>화재 발생</div>
+              <button class="act" data-detail="fire-how">요령</button>
+              <button class="act" data-detail="fire-loc">위치</button>
+            </div>
+            <div class="card c-aed">
+              <div class="name"><svg viewBox="0 0 44 44" fill="none" aria-hidden="true"><use href="#i-aed"/></svg>심정지 환자 발생</div>
+              <button class="act" data-detail="aed-how">요령</button>
+              <button class="act" data-detail="aed-loc">위치</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- EMERGENCY CALL PICKER -->
+        <section class="view" id="v-call" aria-label="긴급 신고" hidden>
+          <div class="glow" style="left:-40px;top:30px;width:150px;height:110px;background:#2f8a5c8c"></div>
+          <div class="glow" style="left:80px;top:110px;width:130px;height:100px;background:#3d6b5873"></div>
+          <div class="glow" style="left:-20px;top:150px;width:140px;height:90px;background:#1f6b4580"></div>
+          <div class="hdr" style="justify-content:flex-end;position:relative"><span class="clock" data-clock>9:41</span></div>
+          <button class="pill" data-dial="112"><span class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M6 18v-5a6 6 0 0 1 12 0v5" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><rect x="3.5" y="18" width="17" height="3.5" rx="1" stroke="#fff" stroke-width="2"/><path d="M12 2v2.5M4.2 5.2l1.8 1.8M19.8 5.2 18 7" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></span>경찰 신고 112</button>
+          <button class="pill" data-dial="119"><span class="ic">SOS</span>긴급 신고 119</button>
+          <button class="cancel" data-go="sos"><span><svg viewBox="0 0 36 36" fill="none"><path d="M33.322 2 2 33.322M2 2l31.322 31.322" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg></span>취소</button>
+        </section>
+
+        <!-- DIALING -->
+        <section class="view" id="v-dial" aria-label="연결" hidden>
+          <div class="glow" style="left:-30px;top:40px;width:240px;height:150px;background:#2f8a5c66"></div>
+          <div class="hdr" style="justify-content:flex-end;position:relative"><span class="clock" data-clock>9:41</span></div>
+          <div class="center">
+            <div class="ring" id="ring">3</div>
+            <div class="num" id="dialNum">119</div>
+            <div class="sub" id="dialSub">3초 후 연결돼요</div>
+          </div>
+          <button class="endbtn" id="endBtn" style="position:relative">취소</button>
+        </section>
+
+        <!-- DETAIL -->
+        <section class="view" id="v-detail" aria-label="안내" hidden>
+          <div class="hdr">
+            <button class="back" data-go="sos"><svg viewBox="0 0 8 12" fill="none"><path d="M6.5 1.5 2 6l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="dHead">안내</span></button>
+            <span class="clock" data-clock>9:41</span>
+          </div>
+          <div class="scroll" id="dBody"></div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button id="homeBtn" class="homebtn">홈으로</button>
+    <button id="reset">처음부터 다시</button>
+  </div>
+</main>
+
+<!-- icon defs exported from the SOSAFE Figma file -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="i-exit"><path d="M44 45.9967H0H15.2358L10.0658 40.65V21.6742H13.3108C14.3 21.6742 15.2358 21.1575 15.7858 20.41L17.9866 17.5917L20.2958 23.6292L12.87 39.6725H15.7858C16.6658 39.6725 17.435 39.155 17.7658 38.4067L23.815 25.2975L24.585 32.715C24.64 33.5775 25.3558 34.2092 26.18 34.2092H37.4L36.685 32.255C36.3 31.3342 35.4758 30.6442 34.43 30.6442H27.8858L27.115 22.1917L24.5858 15.5792H27.8858L29.92 19.6617C30.1958 20.1792 30.635 20.4659 31.24 20.4659C32.01 20.4659 32.67 19.7767 32.67 18.9717C32.67 18.6842 32.6158 18.4542 32.5058 18.2817L30.25 13.7967C29.7 12.7034 28.655 12.0142 27.4458 12.0142H19.8C18.59 12.0142 17.4908 12.59 16.7758 13.4517L13.2 18.11H10.065V3.5625H33.9358V29.84H34.43C35.8058 29.84 36.9058 30.7025 37.4008 31.9675L38.5008 35.015H33.935V40.65L39.0492 45.9967H44Z" fill="#fff"/><path d="M19.3063 41.8599C18.5355 41.1124 17.4905 40.6524 16.3898 40.6524H13.3105L18.4805 45.9999H23.2663L19.3063 41.8599ZM17.9305 5.28906C16.2255 5.28906 14.8505 6.78488 14.8505 8.56738C14.8505 10.3499 16.2255 11.7874 17.9305 11.7874C19.6355 11.7874 21.0655 10.3499 21.0655 8.56656C21.0655 6.78324 19.6363 5.28906 17.9305 5.28906Z" fill="#33DB94"/><path d="M44 0V45.9992H39.0492L33.935 40.6525V35.0175H38.5008L37.4008 31.97C36.9058 30.705 35.8058 29.8425 34.43 29.8425H33.9358V3.565H10.065V18.1125H13.2L16.7758 13.4542C17.4908 12.5925 18.59 12.0167 19.8 12.0167H27.4458C28.655 12.0167 29.7 12.7059 30.25 13.7992L32.5058 18.2842C32.6158 18.4567 32.67 18.6867 32.67 18.9742C32.67 19.7792 32.01 20.4684 31.24 20.4684C30.635 20.4684 30.1958 20.1817 29.92 19.6642L27.8858 15.5817H24.5858L27.115 22.1942L27.8858 30.6467H34.43C35.4758 30.6467 36.3 31.3367 36.685 32.2575L37.4 34.2117H26.18C25.3558 34.2117 24.64 33.58 24.585 32.7175L23.815 25.3L17.7658 38.4092C17.435 39.1575 16.6658 39.675 15.7858 39.675H12.87L20.2958 23.6317L17.9866 17.5942L15.7858 20.4125C15.2358 21.16 14.3 21.6767 13.3108 21.6767H10.0658V40.6525L15.2358 45.9992H0V0H44Z" fill="#32DB93"/></g>
+    <linearGradient id="fireG" x1="0" y1="22" x2="44" y2="22" gradientUnits="userSpaceOnUse"><stop stop-color="#FF8E10"/><stop offset=".93" stop-color="#FF9916"/></linearGradient>
+    <g id="i-fire"><path d="M44 0H0V44H44V0Z" fill="#fff"/><path d="M0 0V44H44V0H0ZM35.2655 8.77135C35.9374 10.1782 36.343 11.7693 37.1147 13.1242C37.7936 14.316 38.7929 15.1562 40.0013 15.7861C40.0219 15.7985 40.0387 15.8147 40.0458 15.8384C40.0799 15.9511 40.0445 16.2934 40.0497 16.4405C40.0835 17.4157 40.1401 18.3947 40.1729 19.3702C40.1888 19.8511 40.1789 20.3331 40.2202 20.8125C40.1822 20.8222 40.163 20.8026 40.1341 20.7897C39.1531 20.3515 37.8683 19.2699 37.1425 18.4753C34.761 15.8689 34.0321 12.0915 35.2655 8.77135ZM31.3314 11.5661C33.0544 12.7175 34.0838 15.8758 35.0469 17.7121C36.103 19.7254 37.0383 21.1095 38.8798 22.48C39.323 22.81 39.7844 23.1281 40.2444 23.4297C40.2312 23.4673 40.1231 23.4731 40.0865 23.4775C37.1994 23.8418 35.2649 23.3032 33.2901 21.1647C32.6995 20.5252 31.8945 19.4876 31.4933 18.7214C30.3562 16.5483 30.2077 12.9402 28.3725 11.3266L27.8394 10.9274C29.0376 10.7905 30.3062 10.8812 31.3314 11.5661ZM19.1885 16.3657C19.1549 23.5314 19.0524 30.6947 18.9947 37.8568C18.9872 38.7734 19.0213 39.6945 18.9713 40.6078H6.42063V14.768C6.61804 13.3727 7.06096 11.7929 8.29296 10.9703C8.90497 10.5615 9.63988 10.3962 10.3701 10.3701V7.58362H9.21923C8.70069 8.10738 8.19453 8.64241 7.66913 9.15929C7.12777 9.69157 5.96066 10.6055 5.73109 11.2917C5.50894 11.9557 5.59279 12.7428 5.52378 13.4346C5.51663 13.5069 5.50426 13.5924 5.41518 13.5924H4.02207L4.04517 10.8414C4.1051 9.26569 4.39764 8.67128 5.52378 7.61964C6.65845 6.56003 7.93856 5.62139 9.06196 4.54335C9.73391 4.49661 10.402 4.56727 11.0726 4.5549V3.39191H14.804V4.7974C15.6286 4.80372 16.4872 4.87823 17.2856 5.08993C17.3665 5.11138 17.7888 5.22492 17.805 5.27304L17.7973 7.3425C17.7217 7.45632 15.5555 7.75985 15.2643 7.80165L15.2148 10.3542C16.8111 10.8722 18.5127 11.5972 19.0318 13.3502C19.3207 14.3257 19.1932 15.3657 19.1885 16.3657ZM28.1861 29.4429C27.3225 28.8207 26.3248 28.4259 25.2709 28.2634C26.9819 27.1636 28.9969 26.6696 30.9325 27.5199C32.5362 28.2246 33.4778 29.5006 34.6351 30.7227C35.3859 31.5159 36.3468 32.1147 37.3729 32.4916C38.2879 32.8276 39.2612 32.9893 40.1718 33.3396C40.1938 33.3684 40.1184 33.43 40.0995 33.4484C39.5075 34.0261 38.3822 34.5102 37.5794 34.684C35.5995 35.1126 32.9508 34.521 31.5338 33.0245C30.4079 31.8356 29.535 30.4145 28.1861 29.4429ZM38.8018 40.7057C36.5118 40.6763 33.9114 40.3791 32.0682 38.9109C30.4409 37.6148 29.6257 35.5553 29.2446 33.5573C30.9501 34.7129 32.8471 35.9567 34.9301 36.2668C36.6655 36.5253 38.3613 36.0925 40.075 35.9072C40.0887 36.3001 40.1465 36.691 40.1715 37.0828C40.1929 37.4205 40.1775 37.7647 40.2213 38.0993L40.2446 40.6807C39.7629 40.6721 39.284 40.712 38.8018 40.7057ZM40.2685 31.0617C38.2926 30.6655 36.3339 29.9696 34.6348 28.8814C31.9607 27.1691 30.1805 24.6053 29.4943 21.4958C29.2828 20.5376 29.1536 19.517 29.1839 18.5352C30.0749 19.4783 30.9127 20.473 31.8002 21.4188C32.6594 22.3341 33.5864 23.2702 34.6496 23.9485C36.3196 25.0136 38.2939 25.4725 40.2279 25.8084L40.2685 25.8403V31.0617Z" fill="url(#fireG)"/><path d="M17.3488 17.3516H8.04492V23.1665H17.3488V17.3516Z" fill="#FF9900"/></g>
+    <g id="i-aed"><path d="M0 0V44H44V0H0ZM32.061 22.3456C31.862 27.894 26.404 33.2312 22.343 36.5091C21.0614 37.5433 19.7255 38.5174 18.3577 39.4346C16.2862 38.0397 14.2721 36.5316 12.4108 34.8638C8.09622 30.9987 2.57306 24.6874 5.42148 18.4655C7.7076 13.4717 14.2037 12.5035 17.6203 16.9176C17.9011 17.2805 18.1236 17.6785 18.3812 18.0559C19.4016 15.9344 21.7558 14.3018 24.1171 14.1122C28.8182 13.7352 32.2224 17.841 32.061 22.3456ZM40.4901 10.8553H36.8717V14.4737H33.2171V10.8553H29.6168C29.6132 10.8553 29.5625 10.805 29.5625 10.801V7.25493C29.5625 7.25095 29.6132 7.20066 29.6168 7.20066H33.2171V3.60033C33.2171 3.59635 33.2678 3.54605 33.2714 3.54605H36.8174C36.8214 3.54605 36.8717 3.59635 36.8717 3.60033V7.20066H40.4901V10.8553Z" fill="#FF5B43"/><path d="M24.117 14.11C21.7556 14.2996 19.4015 15.9323 18.3811 18.0538C18.1235 17.6763 17.9009 17.2783 17.6201 16.9154C14.2036 12.5013 7.70748 13.4696 5.42136 18.4634C2.57294 24.6852 8.0961 30.9965 12.4107 34.8617C14.272 36.5294 16.286 38.0376 18.3576 39.4325C19.7253 38.5152 21.0613 37.5411 22.3429 36.507C26.4039 33.229 31.8619 27.8919 32.0609 22.3434C32.2223 17.8388 28.8181 13.733 24.117 14.11ZM14.597 34.84L14.5101 34.8255L17.6578 27.3893H13.0624L21.6569 17.6923L21.71 17.7455L18.0558 25.2544H22.7959L14.597 34.84Z" fill="#FEFEFE"/><path d="M40.4901 7.20148V10.8561H36.8717V14.4745H33.2171V10.8561H29.6168C29.6132 10.8561 29.5625 10.8058 29.5625 10.8018V7.25576C29.5625 7.25178 29.6132 7.20148 29.6168 7.20148H33.2171V3.60115C33.2171 3.59717 33.2678 3.54688 33.2714 3.54688H36.8174C36.8214 3.54688 36.8717 3.59717 36.8717 3.60115V7.20148H40.4901Z" fill="#FDFEFD"/><path d="M22.7961 25.2575L14.5971 34.843L14.5102 34.8285L17.6579 27.3923H13.0625L21.657 17.6953L21.7102 17.7485L18.0559 25.2575H22.7961Z" fill="#ED1C24"/></g>
+    <g id="i-sos"><path d="M.24 9.56h5.79c.68 0 1.14-.39 1.14-.97s-.46-.97-1.14-.97H3.61C1.44 7.63 0 6.17 0 4 0 1.82 1.44.47 3.61.47h5.92v2.65H4.26c-.69 0-1.14.39-1.14.97s.46.97 1.14.97h2.05c2.39 0 3.98 1.46 3.98 3.63 0 2.18-1.58 3.53-3.98 3.53H.24V9.56Z" fill="#000"/><path d="M26.17 6.1c0 3.46-2.65 6.11-6.31 6.11-3.66 0-6.31-2.65-6.31-6.11C13.55 2.64 16.2 0 19.86 0c3.66 0 6.31 2.65 6.31 6.1Zm-3.17 0c0-1.96-1.25-3.51-3.14-3.51s-3.14 1.55-3.14 3.51 1.25 3.52 3.14 3.52 3.14-1.55 3.14-3.52Z" fill="#000"/><path d="M29.22 9.56h5.79c.68 0 1.14-.39 1.14-.97s-.46-.97-1.14-.97h-2.42c-2.17 0-3.61-1.45-3.61-3.62 0-2.18 1.44-3.53 3.61-3.53h5.92v2.65h-5.27c-.68 0-1.14.39-1.14.97s.46.97 1.14.97h2.05c2.39 0 3.98 1.46 3.98 3.63 0 2.18-1.58 3.53-3.98 3.53h-6.07V9.56Z" fill="#000"/><circle cx="12.62" cy="10.81" r="1.2" fill="#000"/><circle cx="27.1" cy="10.81" r="1.2" fill="#000"/></g>
+  </defs>
+</svg>
+
+<script>
+(function(){
+  const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+
+  /* ---------- fit device to viewport ---------- */
+  function fit(){
+    const W=document.documentElement.clientWidth, H=document.documentElement.clientHeight;
+    const phone=W<560 && (matchMedia('(pointer:coarse)').matches || W<480);
+    document.documentElement.classList.toggle('phone',phone);
+    let sF;
+    if(phone){
+      const reserved=24+14+44; // padding, gap, toolbar
+      sF=Math.min((W-24)/184,(H-reserved)/224);
+    }else{
+      const cap=document.querySelector('.caption'); cap.hidden = H<560;
+      const reserved=(cap.hidden?0:cap.offsetHeight+18)+28+18+24;
+      const sw=(W-32)/224, sh=(H-reserved)/252;
+      const s0=Math.max(1.5,Math.min(sw,sh,3));
+      sF=Math.min(s0,Math.max(sw,1.2));
+    }
+    document.documentElement.style.setProperty('--s',sF.toFixed(3));
+  }
+  addEventListener('resize',fit); fit();
+
+  /* ---------- live clock ---------- */
+  function tick(){const d=new Date();const t=d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');$$('[data-clock]').forEach(e=>e.textContent=t);}
+  tick(); setInterval(tick,10000);
+
+  /* ---------- navigation ---------- */
+  let current='home';
+  function go(name){
+    if(name===current) return;
+    $('#v-'+current).hidden=true;
+    const v=$('#v-'+name); v.hidden=false; v.classList.add('enter');
+    requestAnimationFrame(()=>requestAnimationFrame(()=>v.classList.remove('enter')));
+    current=name;
+    if(name==='sos') resetSlider(false);
+    if(name!=='dial') stopDial();
+    if(name!=='detail' && typeof stopCompass==='function') stopCompass();
+  }
+  document.addEventListener('click',e=>{const b=e.target.closest('[data-go]'); if(b) go(b.dataset.go);});
+  $('#crown').addEventListener('click',()=>go('home'));
+  $('#homeBtn').addEventListener('click',()=>go('home'));
+  $('#toSos').addEventListener('click',()=>go('sos'));
+
+  /* ---------- toast ---------- */
+  let tt;
+  function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1600);}
+
+  /* ---------- home: ticket + attendance ---------- */
+  let ticketUsed=false, checked=false;
+  $('#ticketBtn').addEventListener('click',()=>{
+    if(ticketUsed){toast('이미 확인한 티켓이에요');return;}
+    ticketUsed=true; $('#ticket').classList.add('used'); $('#ticketBtn').textContent='완료'; toast('+300 P 적립');
+  });
+  const EN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const check='<svg viewBox="0 0 12 12" fill="none"><path d="M2.5 6.2l2.3 2.3L9.5 3.8" stroke="#4CFFA4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  function renderDays(){
+    const today=new Date(); const box=$('#days'); box.innerHTML='';
+    [-1,0,1].forEach(off=>{
+      const d=new Date(today); d.setDate(today.getDate()+off);
+      const el=document.createElement(off===0?'button':'div');
+      el.className='day '+(off<0?'past':off===0?'today':'future')+(off===0&&checked?' done':'');
+      el.innerHTML='<b>'+d.getDate()+'</b>'+(off<0?check:off===0&&checked?check:'<small>'+EN[d.getDay()]+'</small>');
+      if(off===0){el.setAttribute('aria-label','오늘 출석체크');el.addEventListener('click',()=>{if(checked){toast('오늘은 출석 완료');return;}checked=true;renderDays();toast('출석 완료 +50 P');});}
+      box.appendChild(el);
+    });
+  }
+  renderDays();
+
+  /* ---------- SOS slider ---------- */
+  const slider=$('#slider'), knob=$('#knob'), fill=$('#fill'), hint=$('#hint');
+  const MAX=184-20-8-56; // track width - knob - padding
+  let dragging=false, startX=0, pos=0;
+  const scale=()=>slider.getBoundingClientRect().width/slider.offsetWidth;
+  function setPos(x){pos=Math.max(0,Math.min(MAX,x));knob.style.transform='translateX('+pos+'px)';fill.style.width=(pos+60)+'px';hint.style.opacity=1-pos/MAX;}
+  function resetSlider(anim=true){knob.classList.toggle('anim',anim);setPos(0);}
+  knob.addEventListener('pointerdown',e=>{dragging=true;knob.classList.remove('anim');startX=e.clientX/scale()-pos;knob.setPointerCapture(e.pointerId);});
+  knob.addEventListener('pointermove',e=>{if(dragging) setPos(e.clientX/scale()-startX);});
+  function release(){if(!dragging)return;dragging=false;if(pos>=MAX*0.9){setPos(MAX);setTimeout(()=>go('call'),120);}else resetSlider(true);}
+  knob.addEventListener('pointerup',release); knob.addEventListener('pointercancel',release);
+  knob.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();knob.classList.add('anim');setPos(MAX);setTimeout(()=>go('call'),250);}});
+  knob.addEventListener('click',e=>e.preventDefault());
+
+  /* ---------- dialing (demo only, no real call) ---------- */
+  let dialTimer=null, phase='count';
+  function stopDial(){clearInterval(dialTimer);dialTimer=null;}
+  $$('[data-dial]').forEach(b=>b.addEventListener('click',()=>{
+    const num=b.dataset.dial; $('#dialNum').textContent=num; go('dial');
+    let n=3; phase='count'; $('#ring').textContent=n; $('#dialSub').textContent='3초 후 연결돼요'; $('#endBtn').textContent='취소';
+    stopDial();
+    dialTimer=setInterval(()=>{
+      if(phase==='count'){n--; if(n>0){$('#ring').textContent=n;$('#dialSub').textContent=n+'초 후 연결돼요';}
+        else{phase='talk';n=0;$('#ring').textContent='00:00';$('#ring').style.fontSize='17px';$('#dialSub').innerHTML=(num==='119'?'119 종합상황실':'112 경찰청')+' 통화 중';$('#endBtn').textContent='통화 종료';}}
+      else{n++;$('#ring').textContent=String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');}
+    },1000);
+  }));
+  $('#endBtn').addEventListener('click',()=>{stopDial();$('#ring').style.fontSize='';go(phase==='talk'?'home':'call');});
+
+  /* ---------- detail screens ---------- */
+  const arrow='<svg viewBox="0 0 40 40" fill="none" id="arrow"><path d="M20 6 31 34 20 28 9 34Z" fill="#4cffa4"/></svg>';
+  const D={
+    'fire-how':{h:'화재',html:'<p class="dtitle">소화기 사용법</p><ol class="steps"><li><b>1</b>큰 소리로 "불이야!" 알리고 119 신고</li><li><b>2</b>안전핀을 뽑아요</li><li><b>3</b>노즐을 불 쪽으로 향해요</li><li><b>4</b>손잡이를 힘껏 움켜쥐어요</li><li><b>5</b>빗자루로 쓸듯이 골고루 뿌려요</li><li><b>6</b>불이 커지면 바로 대피하세요</li></ol>'},
+    'aed-how':{h:'심정지',html:'<p class="dtitle">심폐소생술 순서</p><ol class="steps"><li><b>1</b>어깨를 두드리며 반응 확인</li><li><b>2</b>119 신고와 AED 요청을 부탁해요</li><li><b>3</b>가슴 중앙을 5cm 깊이로 분당 100~120회 압박</li><li><b>4</b>AED가 오면 전원을 켜고 음성 안내를 따라요</li><li><b>5</b>구급대 도착까지 압박을 멈추지 마세요</li></ol>'}
+  };
+  const PLACES={'exit-loc':{key:'exit',h:'비상구',name:'비상구'},'fire-loc':{key:'fire',h:'소화전',name:'소화전'},'aed-loc':{key:'aed',h:'AED',name:'AED'}};
+
+  /* ---------- real compass: GPS + device heading ---------- */
+  const TKEY='sosafe-targets';
+  const loadT=()=>{try{return JSON.parse(localStorage.getItem(TKEY))||{}}catch(e){return {}}};
+  const saveT=t=>{try{localStorage.setItem(TKEY,JSON.stringify(t));return true}catch(e){return false}};
+  let targets=loadT();
+  const C={place:null,pos:null,acc:null,heading:null,shown:null,geoId:null,oriOn:false,err:null,raf:0};
+  const rad=x=>x*Math.PI/180, deg=x=>x*180/Math.PI;
+  function distM(a,b){const R=6371000,dLa=rad(b.lat-a.lat),dLo=rad(b.lng-a.lng);const h=Math.sin(dLa/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(h));}
+  function bearing(a,b){const y=Math.sin(rad(b.lng-a.lng))*Math.cos(rad(b.lat));const x=Math.cos(rad(a.lat))*Math.sin(rad(b.lat))-Math.sin(rad(a.lat))*Math.cos(rad(b.lat))*Math.cos(rad(b.lng-a.lng));return (deg(Math.atan2(y,x))+360)%360;}
+  function onOri(e){
+    let h=null;
+    if(typeof e.webkitCompassHeading==='number') h=e.webkitCompassHeading;                 // iOS
+    else if(e.absolute && typeof e.alpha==='number') h=(360-e.alpha)%360;                    // Android absolute
+    if(h==null) return;
+    const so=(screen.orientation&&screen.orientation.angle)||window.orientation||0;
+    C.heading=(h+so+360)%360;
+  }
+  function startOrientation(){
+    if(C.oriOn) return;
+    const go2=()=>{C.oriOn=true;addEventListener('deviceorientationabsolute',onOri,true);addEventListener('deviceorientation',onOri,true);};
+    try{
+      if(window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission==='function'){
+        DeviceOrientationEvent.requestPermission().then(r=>{if(r==='granted') go2(); else C.err='나침반 권한이 거부됐어요';}).catch(()=>{});
+      }else if(window.DeviceOrientationEvent) go2();
+    }catch(e){}
+  }
+  function startGeo(){
+    if(C.geoId!=null) return;
+    if(!navigator.geolocation){C.err='이 브라우저는 위치를 지원하지 않아요';return;}
+    try{
+      C.geoId=navigator.geolocation.watchPosition(p=>{C.pos={lat:p.coords.latitude,lng:p.coords.longitude};C.acc=p.coords.accuracy;C.err=null;},
+        e=>{C.err=e.code===1?'위치 권한이 꺼져 있어요':'위치를 찾지 못했어요';},{enableHighAccuracy:true,maximumAge:2000,timeout:15000});
+    }catch(e){C.err='이 화면에서는 위치를 쓸 수 없어요';}
+  }
+  function stopCompass(){
+    if(C.geoId!=null){try{navigator.geolocation.clearWatch(C.geoId)}catch(e){} C.geoId=null;}
+    if(C.oriOn){removeEventListener('deviceorientationabsolute',onOri,true);removeEventListener('deviceorientation',onOri,true);C.oriOn=false;}
+    cancelAnimationFrame(C.raf); C.place=null; C.shown=null;
+  }
+  function renderCompass(){
+    const P=PLACES[C.place]; if(!P) return;
+    const t=targets[P.key];
+    $('#dBody').innerHTML='<div class="center"><div class="dir" id="dir">'+arrow+'</div><div class="dist" id="dist">--</div><div class="sub" id="csub">위치 확인 중…</div><button class="savebtn" id="saveHere"></button></div>';
+    $('#saveHere').textContent=t?'여기로 다시 저장':'여기를 '+P.name+'로 저장';
+    $('#saveHere').addEventListener('click',()=>{
+      if(!C.pos){toast('위치를 아직 못 찾았어요');return;}
+      targets[P.key]={lat:C.pos.lat,lng:C.pos.lng}; const ok=saveT(targets);
+      toast(ok?P.name+' 위치 저장됨':'저장 실패 (이 브라우저는 저장 불가)'); $('#saveHere').textContent='여기로 다시 저장';
+    });
+    loop();
+  }
+  function loop(){
+    const P=PLACES[C.place]; if(!P) return;
+    const t=targets[P.key], a=$('#arrow'), dist=$('#dist'), sub=$('#csub'); if(!a) return;
+    let target=null, msg='';
+    if(C.err && !C.pos){ msg=C.err; }
+    else if(!C.pos){ msg='위치 확인 중…'; }
+    else if(!t){ msg=P.name+' 앞에 서서 저장해 주세요'; dist.textContent='위치 미등록'; }
+    else{
+      const d=distM(C.pos,t), br=bearing(C.pos,t);
+      dist.innerHTML=(d<1000?Math.round(d):(d/1000).toFixed(1))+'<small>'+(d<1000?'m':'km')+'</small>';
+      if(C.heading!=null){ target=br-C.heading; msg=(d<=Math.max(5,(C.acc||0)*0.6)?'도착했어요':'화살표 방향으로 이동하세요')+'<br>GPS 오차 ±'+Math.round(C.acc||0)+'m'; }
+      else { target=br; msg='나침반 센서가 없어 북쪽(위) 기준이에요<br>GPS 오차 ±'+Math.round(C.acc||0)+'m'; }
+    }
+    if(sub.innerHTML!==msg) sub.innerHTML=msg;
+    if(target!=null){
+      if(C.shown==null) C.shown=target;
+      let diff=((target-C.shown)%360+540)%360-180; C.shown+=diff*0.2;   // smooth, shortest way round
+      a.style.transform='rotate('+C.shown.toFixed(1)+'deg)'; a.style.opacity=1;
+    } else a.style.opacity=.25;
+    C.raf=requestAnimationFrame(loop);
+  }
+
+  document.addEventListener('click',e=>{
+    const b=e.target.closest('[data-detail]'); if(!b) return;
+    const key=b.dataset.detail;
+    if(PLACES[key]){
+      startOrientation();            // must run inside the tap for iOS permission
+      startGeo();
+      $('#dHead').textContent=PLACES[key].h; go('detail'); C.place=key; C.shown=null; renderCompass(); return;
+    }
+    const d=D[key]; $('#dHead').textContent=d.h; $('#dBody').innerHTML=d.html; $('#dBody').scrollTop=0; go('detail');
+  });
+
+  /* ---------- reset ---------- */
+  $('#reset').addEventListener('click',()=>{ticketUsed=false;checked=false;$('#ticket').classList.remove('used');$('#ticketBtn').textContent='확인';renderDays();stopDial();go('home');});
+})();
+</script>
+
+</body>
+</html>
